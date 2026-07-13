@@ -54,6 +54,13 @@ def true_ru_epd_residual(params, points, sensor_origin):
     The actual RU-EPD residual (C-EPD ray-intersection distance).
     Computes where each measurement ray intersects the cylinder, and takes the distance
     difference along that specific ray.
+    
+    NOTE ON UNBIASEDNESS: The paper's unbiasedness proof (Theorem 2) and real-world 
+    validation strictly depend on an elliptical cross-section (D_max, D_min) where 
+    major and minor axis errors cancel each other out. This circular adaptation 
+    (single radius r) lacks that cancellation mechanism, and thus is expected to 
+    behave differently (often underperforming canonical on pure circular data).
+    It should NOT be cited as validating the paper's claim without an elliptical extension.
     """
     c = params[0:3]
     a = get_axis_from_angles(params[3], params[4])

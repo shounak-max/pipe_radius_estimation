@@ -77,10 +77,19 @@ def generate_plant_scale_scene(sensor_type="lidar", occlusion_level="none"):
     
     sensor_origin = (150, 150, 300)
     
-    p1 = generate_synthetic_pipe(50, 300, 2000, visible_fraction=1.0 if occlusion_level == "none" else 0.3, origin=(0,0,0), axis=(1,0,0), noise_std=0)
+    if occlusion_level == "light":
+        vis = 0.50
+    elif occlusion_level == "moderate":
+        vis = 0.30
+    elif occlusion_level == "heavy":
+        vis = 0.15
+    else:
+        vis = 1.0
+
+    p1 = generate_synthetic_pipe(50, 300, 2000, visible_fraction=vis, origin=(0,0,0), axis=(1,0,0), noise_std=0)
     ground_truth.append({"id": "pipe_1", "radius": 50, "axis": (1,0,0), "center": (150,0,0)})
     
-    p2 = generate_synthetic_pipe(100, 400, 3000, visible_fraction=1.0 if occlusion_level == "none" else 0.4, origin=(300,50,0), axis=(0,1,0), noise_std=0)
+    p2 = generate_synthetic_pipe(100, 400, 3000, visible_fraction=vis, origin=(300,50,0), axis=(0,1,0), noise_std=0)
     ground_truth.append({"id": "pipe_2", "radius": 100, "axis": (0,1,0), "center": (300,250,0)})
     
     scene_points.append(p1)
