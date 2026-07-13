@@ -1,0 +1,8 @@
+{
+    "total_scenes": 3,
+    "splits": {
+        "train": 2,
+        "val": 0,
+        "test": 1
+    }
+}

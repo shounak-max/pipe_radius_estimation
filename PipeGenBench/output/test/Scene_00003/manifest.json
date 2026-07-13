@@ -1,0 +1,25 @@
+{
+    "scan_id": "Scene_00003",
+    "scene_id": "synthetic_benchmark",
+    "site_id": "PipeGenBench",
+    "sensor_id": "CyclesRender",
+    "operator_id": "sim",
+    "timestamp": "2026-07-14T00:00:00Z",
+    "pcd_path": "pointcloud.ply",
+    "rgb_path": "rgb.png",
+    "depth_path": "depth.exr",
+    "standoff_range_m": 2.5,
+    "incidence_angle_deg": 0.0,
+    "measured_visible_circumference_pct": 50.0,
+    "ambient_temperature_c": 20.0,
+    "lighting_condition": "randomized",
+    "pipe_inventory": [
+        "Pipe_Main",
+        "Pipe_Branch",
+        "Pipe_Main",
+        "Pipe_Branch",
+        "Pipe_Main",
+        "Pipe_Branch"
+    ],
+    "alignment_type": "hardware_sdk"
+}
