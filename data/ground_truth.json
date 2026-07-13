@@ -1,0 +1,12 @@
+[
+  {
+    "pipe_id": "pipe_01",
+    "material": "steel",
+    "surface_finish": "matte",
+    "nominal_diameter_mm": 100.0,
+    "measured_radius_mm": 50.1,
+    "radius_uncertainty_mm": 0.05,
+    "measurement_method": "CMM",
+    "calibration_cert_ref": "CERT-CMM-999"
+  }
+]

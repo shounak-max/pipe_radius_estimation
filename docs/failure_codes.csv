@@ -1,0 +1,11 @@
+code,category,description,action
+E001,Data Collection,Sensor failed to trigger or dropped frames,Discard scan and repeat capture
+E002,Data Collection,Calibration board not detected in extrinsic setup,Repeat calibration capture
+E003,Data Collection,Extreme lighting interference (e.g. direct sun in IR),Log environmental condition and discard scan
+E004,Segmentation,No pipe points found by segmenter,Log algorithm failure for occlusion condition
+E005,Segmentation,Segmentation over-merges pipe and background,Log algorithm failure
+E006,Fitting,RANSAC failed to find inliers,Log non-convergence and breakdown point
+E007,Fitting,LMA optimization diverged or hit max iterations,Log non-convergence
+E008,Fitting,Radius fitted is outside physical bounds (>2m or <5mm),Log as gross error
+E009,Topology,Disconnected segment falsely bridged,Log topology precision error
+E010,Topology,Valid joint failed to connect,Log topology recall error

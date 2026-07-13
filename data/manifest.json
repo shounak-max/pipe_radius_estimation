@@ -1,0 +1,15 @@
+{
+  "scan_id": "dummy_scan_001",
+  "scene_id": "lab_setup_A",
+  "site_id": "facility_HQ",
+  "sensor_id": "kinect_v2_01",
+  "operator_id": "op_shoun",
+  "timestamp": "2026-07-12T20:55:00Z",
+  "pcd_path": "dummy.ply",
+  "standoff_range_m": 1.5,
+  "incidence_angle_deg": 15.0,
+  "measured_visible_circumference_pct": 50.0,
+  "ambient_temperature_c": 22.0,
+  "lighting_condition": "indoor fluorescent",
+  "pipe_inventory": ["pipe_01"]
+}
