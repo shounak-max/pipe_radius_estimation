@@ -23,6 +23,8 @@ class ScanManifest(BaseModel):
     rgb_path: Optional[str] = Field(None, description="Path to raw RGB image, if available")
     depth_path: Optional[str] = Field(None, description="Path to raw depth image, if available")
     
+    alignment_type: Optional[str] = Field(None, description="How RGB-D alignment was achieved (e.g., 'hardware_sdk', 'software_computed', 'unaligned')")
+    
     standoff_range_m: float = Field(..., description="Standoff distance in meters")
     incidence_angle_deg: float = Field(..., description="Approximate incidence angle in degrees")
     measured_visible_circumference_pct: float = Field(..., description="Measured visible circumference (0-100%)")

@@ -53,19 +53,35 @@ def run_simulation_ablation(num_trials=50):
         biases_topo.append(bias_topo)
         
         # 3. Topology-Aware + Bias Correction
-        def variance_corrected_constrained_residual(params, points):
+        # We first run the canonical constrained residual to get the fixed variance
+        def canonical_constrained_residual(params, points):
             c = params[0:3]
             a = gt_axis
             r = params[3]
             v = points - c
             dist = np.linalg.norm(np.cross(v, a), axis=1)
+            return dist - r
+            
+        res_canon_const = least_squares(canonical_constrained_residual, init_constrained, args=(pipe2_points,), method='lm')
+        fixed_var = np.var(canonical_constrained_residual(res_canon_const.x, pipe2_points))
+        
+        def variance_corrected_constrained_residual(params, points, f_var):
+            c = params[0:3]
+            a = gt_axis
+            r = np.exp(params[3])
+            v = points - c
+            dist = np.linalg.norm(np.cross(v, a), axis=1)
             residuals = dist - r
-            var = np.var(residuals)
-            correction = var / max(2 * abs(r), 1.0)
+            correction = f_var / (2 * r)
             return residuals - correction
             
-        res_full = least_squares(variance_corrected_constrained_residual, init_constrained, args=(pipe2_points,), method='lm')
-        final_radius = abs(res_full.x[3])
+        init_full = np.copy(res_canon_const.x)
+        if init_full[3] <= 0:
+            init_full[3] = 1e-6
+        init_full[3] = np.log(init_full[3])
+            
+        res_full = least_squares(variance_corrected_constrained_residual, init_full, args=(pipe2_points, fixed_var), method='lm')
+        final_radius = np.exp(res_full.x[3])
         bias_full = compute_signed_bias(final_radius, gt_radius)
         biases_full.append(bias_full)
 

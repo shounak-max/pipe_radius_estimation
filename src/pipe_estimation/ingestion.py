@@ -56,3 +56,31 @@ class DataIngestor:
             
         points = np.asarray(pcd.points)
         return points
+
+    def load_aligned_rgbd(self, manifest: ScanManifest) -> "FusionInput":
+        """
+        Explicit registration stage.
+        Loads raw RGB, depth, and point cloud from the manifest and ensures they are pixel-aligned
+        before passing them to the fusion module.
+        Checks manifest.alignment_type to determine whether to use hardware SDK intrinsics,
+        software point-to-plane registration, or passthrough.
+        """
+        from .fusion import FusionInput, CameraCalibration
+        
+        # Stub: Implement actual per-sensor registration logic (e.g. Kinect SDK transform, LiDAR-Camera extrinsic)
+        calib = CameraCalibration(
+            intrinsics=np.eye(3),
+            extrinsics=np.eye(4),
+            image_width=1920,
+            image_height=1080
+        )
+        
+        pcd = self.load_point_cloud(manifest.pcd_path)
+        
+        return FusionInput(
+            segmented_cloud=pcd, # Usually segmented downstream, but held here for now
+            rgb_edge_image=np.zeros((1080, 1920), dtype=np.uint8),
+            depth_image=np.zeros((1080, 1920), dtype=np.float32),
+            calibration=calib,
+            edge_weight=0.5
+        )

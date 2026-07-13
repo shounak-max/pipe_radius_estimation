@@ -41,9 +41,12 @@ def build_topology_graph(segments: List[PipeSegment], distance_threshold: float,
 
 def globally_optimize_graph(nodes: List[TopologyNode], edges: List[TopologyEdge], segments: List[PipeSegment]) -> List[TopologyEdge]:
     """
-    Applies joint optimization. For example, enforces that an edge connected between two nodes 
-    MUST have an axis parallel to the vector between those nodes, passing that constrained axis 
-    back into the local cylinder fitters to tighten variance.
+    Applies joint optimization in stages to prevent divergence on large graphs:
+    1. Local Pairwise Optimization: Resolves constraints only between adjacent connected pairs (small, well-conditioned).
+    2. Global Bundle-Adjustment: Resolves the entire mathematical graph (escalated only if local resolution leaves inconsistencies).
+    
+    Enforces topological constraints (e.g., parallel axes, shared elbows) and passes them back
+    into local cylinder fitters to tighten variance.
     """
     # Stub: To be implemented in the next phase
     return edges

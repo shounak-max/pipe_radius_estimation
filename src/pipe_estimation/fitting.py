@@ -26,33 +26,31 @@ def canonical_cylinder_residual(params, points):
     res[-1] = 1e-4 * np.dot(c, a) # Regularize center drift
     return res
 
-def variance_corrected_residual(params, points):
+def variance_corrected_residual(params, points, fixed_variance=None):
     """
     Rice/magnitude-bias-style variance correction.
-    Inspired by but not equivalent to RU-EPD. Subtracts variance(residuals)/(2r)
-    to counteract the upward bias of distance magnitude under isotropic noise.
+    Fits log_r instead of r to prevent negative/zero radius.
+    Requires a fixed_variance passed in to avoid self-referential instability.
+    params: [cx, cy, cz, theta, phi, log_r]
     """
     c = params[0:3]
     a = get_axis_from_angles(params[3], params[4])
-    r = params[5]
+    r = np.exp(params[5])
     
     v = points - c
     dist = np.linalg.norm(np.cross(v, a), axis=1)
-    
-    # Variance-based heuristic correction
     residuals = dist - r
-    var = np.var(residuals)
     
-    # The bias induced by anisotropic curvature (often analyzed via Rice distributions)
-    # is ~ var / (2R). We subtract this from the standard geometric residual.
-    # We floor the denominator to prevent catastrophic divergence if optimizer sends r -> 0.
-    correction = var / max(2 * abs(r), 1.0)
+    if fixed_variance is None:
+        # Fallback if not provided, but ideally should be avoided
+        var = np.var(residuals)
+    else:
+        var = fixed_variance
+        
+    correction = var / (2 * r)
     
-    # 6 params: cx, cy, cz, theta, phi, r
-    # same as canonical, we append regularizer
     res = np.zeros(len(points) + 1)
     res[:-1] = residuals - correction
-    # Regularizer to break the true axis-translation gauge freedom (confirmed via test_gauge_freedom)
     res[-1] = 1e-4 * np.dot(c, a)
     return res
 
@@ -130,21 +128,37 @@ class CylinderFitter:
             params: array
             diagnostics: dict
         """
+        points = np.asarray(points)
+        
         if self.residual_type == "variance_corrected":
+            # 1. Estimate variance from an initial canonical fit
+            res_canon = least_squares(canonical_cylinder_residual, initial_guess, args=(points,), method='lm')
+            residuals = canonical_cylinder_residual(res_canon.x, points)[:-1]
+            fixed_variance = np.var(residuals)
+            
+            # 2. Reparameterize r -> log_r for the initial guess
+            init_var = np.copy(res_canon.x)
+            if init_var[5] <= 0:
+                init_var[5] = 1e-6
+            init_var[5] = np.log(init_var[5])
+            
             residual_func = variance_corrected_residual
-            args = (points,)
+            args = (points, fixed_variance)
+            result = least_squares(residual_func, init_var, args=args, method='lm')
+            
+            # Convert back log_r -> r
+            result.x[5] = np.exp(result.x[5])
+            
         elif self.residual_type == "ru_epd":
             residual_func = true_ru_epd_residual
             if sensor_origin is None:
                 raise ValueError("sensor_origin must be provided for true_ru_epd residual")
             args = (points, sensor_origin)
+            result = least_squares(residual_func, initial_guess, args=args, method='lm')
         else:
             residual_func = canonical_cylinder_residual
             args = (points,)
-        
-        points = np.asarray(points)
-        
-        result = least_squares(residual_func, initial_guess, args=args, method='lm')
+            result = least_squares(residual_func, initial_guess, args=args, method='lm')
         
         # Diagnostics
         diagnostics = {
