@@ -1,0 +1,22 @@
+dataset:
+    num_scenes: 1
+
+camera:
+    type: azure_kinect
+
+pipes:
+    radius:
+        min: 0.02
+        max: 0.25
+    length:
+        min: 0.5
+        max: 5.0
+
+occlusion:
+    enabled: true
+    visibility_range:
+        - 0.1
+        - 1.0
+
+lighting:
+    randomize: true
