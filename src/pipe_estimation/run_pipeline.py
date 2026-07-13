@@ -61,7 +61,7 @@ def run_simulation_ablation(num_trials=50):
             dist = np.linalg.norm(np.cross(v, a), axis=1)
             residuals = dist - r
             var = np.var(residuals)
-            correction = var / (2 * r) if r > 0 else 0
+            correction = var / max(2 * abs(r), 1.0)
             return residuals - correction
             
         res_full = least_squares(variance_corrected_constrained_residual, init_constrained, args=(pipe2_points,), method='lm')

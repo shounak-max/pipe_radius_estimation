@@ -42,11 +42,18 @@ def variance_corrected_residual(params, points):
     # Variance-based heuristic correction
     residuals = dist - r
     var = np.var(residuals)
-    correction = var / (2 * r) if r > 0 else 0
     
-    res = residuals - correction
+    # The bias induced by anisotropic curvature (often analyzed via Rice distributions)
+    # is ~ var / (2R). We subtract this from the standard geometric residual.
+    # We floor the denominator to prevent catastrophic divergence if optimizer sends r -> 0.
+    correction = var / max(2 * abs(r), 1.0)
+    
+    # 6 params: cx, cy, cz, theta, phi, r
+    # same as canonical, we append regularizer
+    res = np.zeros(len(points) + 1)
+    res[:-1] = residuals - correction
     # Regularizer to break the true axis-translation gauge freedom (confirmed via test_gauge_freedom)
-    res = np.append(res, 1e-4 * np.dot(c, a))
+    res[-1] = 1e-4 * np.dot(c, a)
     return res
 
 def true_ru_epd_residual(params, points, sensor_origin):
