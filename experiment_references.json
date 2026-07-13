@@ -27,7 +27,7 @@
       "evidence_summary": "The paper analyzes residual-induced diameter bias and proposes RU-EPD. In a real 20 inch prototype pipeline experiment, RU-EPD reduced mean-diameter bias from about 4.2 mm to at most 0.46 mm and reduced the error range compared with the canonical residual.",
       "supports_gaps": ["G1", "G4"],
       "used_in_protocol": true,
-      "protocol_use": "Provides the bias-aware residual family for physical validation in Experiment 1 and the bias-correction ablation in Experiment 4.",
+      "protocol_use": "Provides the true RU-EPD ray-intersection residual (C-EPD) for physical validation in Experiment 1 and the bias-correction ablation in Experiment 4.",
       "limitations_to_address": [
         "Large part of evidence is simulation",
         "Real validation is an in-pipe ToF setup",

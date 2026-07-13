@@ -35,7 +35,7 @@ class ScanManifest(BaseModel):
 class ProcessingConfiguration(BaseModel):
     config_id: str = Field(..., description="Unique identifier for this processing run configuration")
     segmentation_method: str = Field(..., description="Algorithm used for pipe segmentation (e.g., RANSAC, RandLA-Net)")
-    fitting_residual_type: str = Field(..., description="canonical or symmetric")
+    fitting_residual_type: str = Field(..., description="canonical, variance_corrected, or ru_epd")
     edge_fusion_enabled: bool = Field(..., description="Whether RGB-D edge fusion is enabled")
     topology_recovery_enabled: bool = Field(..., description="Whether adaptive centerline and topology recovery is enabled")
     inlier_threshold: float = Field(..., description="Inlier threshold for fitting in meters")
