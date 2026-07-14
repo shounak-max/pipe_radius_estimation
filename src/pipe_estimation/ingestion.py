@@ -15,13 +15,22 @@ class DataIngestor:
         if not self.data_root.exists():
             raise FileNotFoundError(f"Data root directory not found: {self.data_root}")
 
-    def load_manifest(self, manifest_path: str) -> ScanManifest:
+    def load_manifest(self, manifest_path: str, allow_synthetic: bool = False) -> ScanManifest:
         full_path = self.data_root / manifest_path
         if not full_path.exists():
             raise FileNotFoundError(f"Manifest file not found: {full_path}")
         with open(full_path, 'r') as f:
             data = json.load(f)
-        return ScanManifest(**data)
+            
+        manifest = ScanManifest(**data)
+        
+        if not allow_synthetic:
+            # Tripwire to prevent pipeline from absorbing unverified synthetic generation
+            is_sim = (manifest.operator_id == "sim" or manifest.sensor_id == "CyclesRender")
+            if is_sim:
+                raise ValueError("HARD SCOPE RULE VIOLATION: Pipeline cannot ingest synthetic PipeGenBench data as evidence.")
+                
+        return manifest
 
     def load_ground_truth(self, gt_path: str) -> List[PipeGroundTruth]:
         full_path = self.data_root / gt_path
@@ -37,24 +46,46 @@ class DataIngestor:
         Filters out any NaN or Inf coordinates that often come from raw depth sensors.
         Optionally applies voxel downsampling.
         """
-        if o3d is None:
-            raise ImportError("open3d is required to load point clouds. Please install it.")
-            
         full_path = self.data_root / pcd_path
         if not full_path.exists():
             raise FileNotFoundError(f"Point cloud file not found: {full_path}")
             
-        pcd = o3d.io.read_point_cloud(str(full_path))
-        if pcd.is_empty():
-            raise ValueError(f"Loaded point cloud from {full_path} is empty or unreadable.")
+        if o3d is not None:
+            pcd = o3d.io.read_point_cloud(str(full_path))
+            if pcd.is_empty():
+                raise ValueError(f"Loaded point cloud from {full_path} is empty or unreadable.")
+                
+            # Filter NaNs and Infs BEFORE downsampling, otherwise Open3D bounding box explodes
+            pcd.remove_non_finite_points()
+                
+            if voxel_size is not None and voxel_size > 0:
+                pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
+                
+            points = np.asarray(pcd.points)
+        else:
+            try:
+                import trimesh
+            except ImportError:
+                raise ImportError("Neither open3d nor trimesh is available to load point clouds. Please install one of them.")
+                
+            mesh = trimesh.load(str(full_path))
+            if hasattr(mesh, 'vertices'):
+                points = np.array(mesh.vertices)
+            else:
+                raise ValueError(f"Could not load vertices from {full_path}")
+                
+            # Basic NaN filter
+            valid = np.isfinite(points).all(axis=1)
+            points = points[valid]
             
-        # Filter NaNs and Infs BEFORE downsampling, otherwise Open3D bounding box explodes
-        pcd.remove_non_finite_points()
-            
-        if voxel_size is not None and voxel_size > 0:
-            pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
-            
-        points = np.asarray(pcd.points)
+            # Simple voxel downsampling fallback
+            if voxel_size is not None and voxel_size > 0:
+                # Quantize points to voxel grid
+                voxel_indices = np.floor(points / voxel_size).astype(np.int32)
+                # Find unique voxels
+                _, unique_indices = np.unique(voxel_indices, axis=0, return_index=True)
+                points = points[unique_indices]
+                
         return points
 
     def load_aligned_rgbd(self, manifest: ScanManifest) -> "FusionInput":

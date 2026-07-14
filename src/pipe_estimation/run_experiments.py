@@ -6,10 +6,6 @@ from pipe_estimation.simulator import generate_synthetic_pipe
 from pipe_estimation.fitting import CylinderFitter
 from pipe_estimation.evaluation import compute_signed_bias
 
-def assert_physical_provenance(manifest):
-    if manifest.sensor_id == "CyclesRender" or manifest.operator_id == "sim":
-        raise ValueError(f"HARD SCOPE RULE VIOLATION: Refusing to evaluate synthetic data as physical evidence. Found sensor_id={manifest.sensor_id}, operator_id={manifest.operator_id}.")
-
 def run_monte_carlo_experiment_1(num_trials=50):
     print("--- Experiment 1: Bias and Variance (Gap 1) [Monte Carlo N=50] ---")
     true_radius = 50.0 # mm

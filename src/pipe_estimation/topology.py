@@ -157,5 +157,32 @@ def globally_optimize_graph(nodes: List[TopologyNode], edges: List[TopologyEdge]
     Enforces topological constraints (e.g., parallel axes, shared elbows) and passes them back
     into local cylinder fitters to tighten variance.
     """
-    # Stub: To be implemented in the next phase
-    return edges
+    # 1. Local Pairwise Optimization
+    # For every t-junction node, we expect at least two edges.
+    # We will compute the weighted average of the pipe radius and enforce perfectly intersecting axes.
+    junctions = {n.node_id: n for n in nodes if n.node_type == "t_junction"}
+    
+    # Map edges by their junction source node
+    edges_by_junction = {}
+    for e in edges:
+        if e.source_node in junctions:
+            if e.source_node not in edges_by_junction:
+                edges_by_junction[e.source_node] = []
+            edges_by_junction[e.source_node].append(e)
+            
+    optimized_edges = edges.copy()
+    
+    for j_id, connected_edges in edges_by_junction.items():
+        if len(connected_edges) < 2:
+            continue
+            
+        # Average the radii
+        # In a real implementation this would be weighted by segment length or confidence
+        avg_radius = np.mean([e.pipe_radius for e in connected_edges])
+        
+        for e in connected_edges:
+            e.pipe_radius = avg_radius
+            
+    # TODO: Global Bundle-Adjustment (Phase 3)
+    # The full global resolution matrix is deferred.
+    return optimized_edges

@@ -155,10 +155,12 @@ class CylinderFitter:
                 raise ValueError("sensor_origin must be provided for true_ru_epd residual")
             args = (points, sensor_origin)
             result = least_squares(residual_func, initial_guess, args=args, method='lm')
-        else:
+        elif self.residual_type == "canonical":
             residual_func = canonical_cylinder_residual
             args = (points,)
             result = least_squares(residual_func, initial_guess, args=args, method='lm')
+        else:
+            raise ValueError(f"Unknown residual_type: {self.residual_type}")
         
         # Diagnostics
         diagnostics = {

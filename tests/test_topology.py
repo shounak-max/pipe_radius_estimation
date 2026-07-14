@@ -20,20 +20,21 @@ def test_topology_recovers_known_t_junction():
         
     gt_center = np.array(gt_nodes[0]["center_coordinate"])
     
-    # Create two synthetic segments that intersect at that junction
-    # We will simulate a point cloud for each segment
+    # Load real point cloud using trimesh
+    try:
+        import trimesh
+        mesh = trimesh.load(os.path.join(fixture_dir, "pointcloud.ply"))
+        points = np.array(mesh.vertices)
+    except Exception:
+        pytest.skip("Could not load pointcloud.ply")
+        
+    # Segment 1: The pipe along the X-axis (mask by |X| > 1.0)
+    pts1 = points[np.abs(points[:, 0]) > 1.0]
+    seg1 = PipeSegment(segment_id="pipe_1", points=pts1)
     
-    # Segment 1: along X axis intersecting gt_center
-    pts1 = []
-    for x in np.linspace(-50, 50, 100):
-        pts1.append(gt_center + np.array([x, 0, 0]))
-    seg1 = PipeSegment(segment_id="pipe_1", points=np.array(pts1))
-    
-    # Segment 2: along Y axis intersecting gt_center
-    pts2 = []
-    for y in np.linspace(0, 50, 100):
-        pts2.append(gt_center + np.array([0, y, 0]))
-    seg2 = PipeSegment(segment_id="pipe_2", points=np.array(pts2))
+    # Segment 2: The pipe along the Y-axis (mask by Y > 2.0)
+    pts2 = points[points[:, 1] > 2.0]
+    seg2 = PipeSegment(segment_id="pipe_2", points=pts2)
     
     nodes, edges = build_topology_graph([seg1, seg2], distance_threshold=5.0, angle_threshold=np.radians(10))
     

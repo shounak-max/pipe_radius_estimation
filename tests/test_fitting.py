@@ -3,7 +3,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 import unittest
 import numpy as np
-from pipe_estimation.fitting import canonical_cylinder_residual, symmetric_bias_aware_residual, CylinderFitter
+from pipe_estimation.fitting import canonical_cylinder_residual, variance_corrected_residual, CylinderFitter
 from pipe_estimation.simulator import generate_synthetic_pipe
 
 class TestFitting(unittest.TestCase):
@@ -23,7 +23,7 @@ class TestFitting(unittest.TestCase):
         init_guess = np.array([0.0, 0.0, 100.0, 0.0, 0.0, 48.0])
         
         fitter_canon = CylinderFitter(residual_type="canonical")
-        fitter_sym = CylinderFitter(residual_type="symmetric")
+        fitter_sym = CylinderFitter(residual_type="variance_corrected")
         
         res_canon, _ = fitter_canon.fit(points, init_guess)
         res_sym, _ = fitter_sym.fit(points, init_guess)
@@ -39,7 +39,7 @@ class TestFitting(unittest.TestCase):
         init_guess = np.array([0.0, 0.0, 100.0, 0.0, 0.0, 48.0])
         
         fitter_canon = CylinderFitter(residual_type="canonical")
-        fitter_sym = CylinderFitter(residual_type="symmetric")
+        fitter_sym = CylinderFitter(residual_type="variance_corrected")
         
         res_canon, _ = fitter_canon.fit(points, init_guess)
         res_sym, _ = fitter_sym.fit(points, init_guess)
