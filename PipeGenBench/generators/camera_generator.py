@@ -16,7 +16,7 @@ class CameraGenerator:
         cam_obj.rotation_euler = (math.radians(90), 0, 0)
         
         scene = bpy.context.scene
-        scene.render.engine = 'CYCLES'
+        scene.render.engine = 'BLENDER_EEVEE'
         scene.render.resolution_x = 1920
         scene.render.resolution_y = 1080
         scene.render.resolution_percentage = 100

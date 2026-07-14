@@ -43,12 +43,29 @@ class RenderPipeline:
         
         # Render Frame
         scene.frame_set(1)
-        bpy.ops.render.render(write_still=False)
         
-        # Blender's CompositorNodeOutputFile adds frame numbers (e.g. rgb0001.png). 
+        # Explicitly set the main render path for RGB (bypassing compositor quirks in background mode)
+        scene.render.image_settings.file_format = 'PNG'
+        scene.render.filepath = os.path.join(output_dir, "rgb.png")
+        
+        # Execute render (write_still=True forces the main composite/scene to save to filepath)
+        bpy.ops.render.render(write_still=True)
+        
+        # Pointcloud export (pure code fixture)
+        # We select all visible mesh objects and export them as a .ply
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in scene.objects:
+            if obj.type == 'MESH' and not obj.hide_render:
+                obj.select_set(True)
+                
+        ply_path = os.path.join(output_dir, "pointcloud.ply")
+        # Export PLY
+        bpy.ops.wm.ply_export(filepath=ply_path, export_selected_objects=True)
+
+        
+        # Blender's CompositorNodeOutputFile adds frame numbers (e.g. depth0001.exr). 
         # We rename them to exactly match schemas.
         try:
-            os.rename(os.path.join(output_dir, "rgb0001.png"), os.path.join(output_dir, "rgb.png"))
             os.rename(os.path.join(output_dir, "depth0001.exr"), os.path.join(output_dir, "depth.exr"))
         except FileNotFoundError:
             pass # Depending on blender settings it might not append frame number
