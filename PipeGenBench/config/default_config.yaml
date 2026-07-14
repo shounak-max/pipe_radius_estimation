@@ -1,5 +1,5 @@
 dataset:
-    num_scenes: 3
+    num_scenes: 1
 
 camera:
     type: azure_kinect

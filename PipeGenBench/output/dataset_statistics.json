@@ -1,7 +1,7 @@
 {
-    "total_scenes": 3,
+    "total_scenes": 1,
     "splits": {
-        "train": 2,
+        "train": 0,
         "val": 0,
         "test": 1
     }
