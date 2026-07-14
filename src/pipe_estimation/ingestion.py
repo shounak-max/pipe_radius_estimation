@@ -98,20 +98,69 @@ class DataIngestor:
         """
         from .fusion import FusionInput, CameraCalibration
         
-        # Stub: Implement actual per-sensor registration logic (e.g. Kinect SDK transform, LiDAR-Camera extrinsic)
+        # Load Calibration
+        calib_path = self.data_root / "calibration.json"
+        if not calib_path.exists():
+            raise FileNotFoundError(f"Calibration file not found: {calib_path}")
+            
+        with open(calib_path, 'r') as f:
+            calib_data = json.load(f)
+            
         calib = CameraCalibration(
-            intrinsics=np.eye(3),
-            extrinsics=np.eye(4),
-            image_width=1920,
-            image_height=1080
+            intrinsics=np.array(calib_data["intrinsics"], dtype=np.float32),
+            extrinsics=np.array(calib_data["extrinsics"], dtype=np.float32),
+            image_width=calib_data["image_width"],
+            image_height=calib_data["image_height"]
         )
         
+        # Load Point Cloud
         pcd = self.load_point_cloud(manifest.pcd_path)
         
+        # Load RGB and convert to edge map
+        rgb_path = str(self.data_root / manifest.rgb_path)
+        depth_path = str(self.data_root / manifest.depth_path)
+        
+        # Try OpenCV first, fallback to imageio
+        try:
+            import cv2
+            rgb_img = cv2.imread(rgb_path, cv2.IMREAD_COLOR)
+            if rgb_img is None:
+                raise ValueError(f"Failed to load RGB image from {rgb_path}")
+            gray = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2GRAY)
+            # Standard Canny Edge detection
+            rgb_edge_image = cv2.Canny(gray, 100, 200)
+            
+            import os
+            os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
+            depth_image = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
+            if depth_image is None:
+                raise ValueError(f"Failed to load depth EXR from {depth_path} via cv2")
+                
+            # If cv2 loads an EXR as BGR float32, take the first channel
+            if len(depth_image.shape) == 3:
+                depth_image = depth_image[:, :, 0]
+                
+        except ImportError:
+            import imageio.v3 as iio
+            rgb_img = iio.imread(rgb_path)
+            # Very basic grayscale conversion
+            gray = np.dot(rgb_img[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
+            # Simple gradient magnitude for edge proxy
+            gy, gx = np.gradient(gray.astype(float))
+            mag = np.sqrt(gx**2 + gy**2)
+            rgb_edge_image = (mag > 50).astype(np.uint8) * 255
+            
+            depth_image = iio.imread(depth_path)
+            if len(depth_image.shape) == 3:
+                depth_image = depth_image[:, :, 0]
+                
+        # Ensure depth is float32
+        depth_image = depth_image.astype(np.float32)
+        
         return FusionInput(
-            segmented_cloud=pcd, # Usually segmented downstream, but held here for now
-            rgb_edge_image=np.zeros((1080, 1920), dtype=np.uint8),
-            depth_image=np.zeros((1080, 1920), dtype=np.float32),
+            segmented_cloud=pcd,
+            rgb_edge_image=rgb_edge_image,
+            depth_image=depth_image,
             calibration=calib,
             edge_weight=0.5
         )

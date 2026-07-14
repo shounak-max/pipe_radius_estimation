@@ -12,13 +12,14 @@ def run_monte_carlo_experiment_1(num_trials=50):
     length = 200.0
     num_points = 1000
     noise_levels = [0.0, 1.0, 2.0, 5.0]
-    
+    results = []
+
     canonical_fitter = CylinderFitter(residual_type="canonical")
     variance_fitter = CylinderFitter(residual_type="variance_corrected")
     ru_epd_fitter = CylinderFitter(residual_type="ru_epd")
-    
+
     sensor_origin = (300, 0, length/2) # Look at the pipe from the side
-    
+
     for noise in noise_levels:
         print(f"\n>> Noise Std = {noise}mm")
         biases_canon = []

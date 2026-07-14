@@ -27,27 +27,10 @@ class RenderPipeline:
             
         render_layers = tree.nodes.new('CompositorNodeRLayers')
         
-        # RGB
-        file_output_rgb = tree.nodes.new('CompositorNodeOutputFile')
-        file_output_rgb.directory = output_dir
-        if hasattr(file_output_rgb, 'file_slots'):
-            file_output_rgb.file_slots[0].path = "rgb"
-        else:
-            file_output_rgb.file_output_items.clear()
-            file_output_rgb.file_output_items.new('RGBA', 'rgb')
-        links.new(render_layers.outputs['Image'], file_output_rgb.inputs[0])
-        
-        # Depth
-        file_output_depth = tree.nodes.new('CompositorNodeOutputFile')
-        file_output_depth.directory = output_dir
-        file_output_depth.format.file_format = 'OPEN_EXR_MULTILAYER'
-        file_output_depth.format.color_depth = '32'
-        if hasattr(file_output_depth, 'file_slots'):
-            file_output_depth.file_slots[0].path = "depth"
-        else:
-            file_output_depth.file_output_items.clear()
-            file_output_depth.file_output_items.new('FLOAT', 'depth')
-        links.new(render_layers.outputs['Depth'], file_output_depth.inputs[0])
+        # Depth via Viewer Node to ensure it gets generated as a standard OPEN_EXR
+        # (avoiding CompositorNodeOutputFile multilayer restrictions)
+        viewer_node = tree.nodes.new('CompositorNodeViewer')
+        links.new(render_layers.outputs['Depth'], viewer_node.inputs[0])
         
         # In Blender 5.1, when executing in background mode, the compositor might not evaluate 
         # file output nodes if the node group is not the active scene node tree.
@@ -64,6 +47,15 @@ class RenderPipeline:
         # Execute render (write_still=True forces the main composite/scene to save to filepath)
         bpy.ops.render.render(write_still=True)
         
+        # After render, save the depth explicitly from the Viewer Node as a standard EXR
+        scene.render.image_settings.file_format = 'OPEN_EXR'
+        scene.render.image_settings.color_depth = '32'
+        if 'Viewer Node' in bpy.data.images:
+            depth_img = bpy.data.images['Viewer Node']
+            depth_img.save_render(filepath=os.path.join(output_dir, "depth.exr"))
+        else:
+            raise RuntimeError("Viewer Node did not generate an image for depth!")
+        
         # Pointcloud export (pure code fixture)
         # We select all visible mesh objects and export them as a .ply
         bpy.ops.object.select_all(action='DESELECT')
@@ -76,22 +68,5 @@ class RenderPipeline:
         bpy.ops.wm.ply_export(filepath=ply_path, export_selected_objects=True, ascii_format=True)
 
         
-        # Blender's CompositorNodeOutputFile might name things inconsistently in 5.1
-        # Check all possible names and rename to depth.exr
-        depth_candidates = [
-            os.path.join(output_dir, "depth0001.exr"),
-            os.path.join(output_dir, "depth.exr"),
-            os.path.join(output_dir, "file_name.exr"),
-            os.path.join(output_dir, "file_name0001.exr")
-        ]
-        
-        renamed = False
-        for cand in depth_candidates:
-            if os.path.exists(cand):
-                if cand != os.path.join(output_dir, "depth.exr"):
-                    os.rename(cand, os.path.join(output_dir, "depth.exr"))
-                renamed = True
-                break
-                
-        if not renamed:
+        if not os.path.exists(os.path.join(output_dir, "depth.exr")):
             raise FileNotFoundError(f"CRITICAL FAILURE: Depth pass was not generated for {output_dir}")

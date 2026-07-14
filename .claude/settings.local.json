@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout 30 claude doctor)",
+      "Bash(claude doctor *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(blender --version)",
+      "Bash(python -c \"import numpy, scipy, pydantic; print\\('core ok'\\)\")",
+      "Bash(python -c \"import open3d; print\\('open3d ok'\\)\")",
+      "Bash(export PATH=\"$PWD/.venv/Scripts:$PATH\")",
+      "Bash(python -c \"import numpy,scipy,pydantic; print\\('numpy',numpy.__version__,'scipy',scipy.__version__,'pydantic',pydantic.__version__\\)\")",
+      "Bash(python -c \"import open3d; print\\('open3d',open3d.__version__\\)\")",
+      "Bash(\"/c/Program Files/Blender Foundation/Blender 5.1/blender.exe\" --version)",
+      "Bash(python -m pytest tests/ -x -q)",
+      "Bash(pip list *)",
+      "Bash(python -m pipe_estimation.run_experiments)",
+      "Bash(PYTHONPATH=src python src/pipe_estimation/run_experiments.py)",
+      "Bash(PYTHONPATH=src python src/pipe_estimation/run_pipeline.py)",
+      "Bash(\"/c/Program Files/Blender Foundation/Blender 5.1/blender.exe\" -b -P PipeGenBench/run_benchmark.py)",
+      "Bash(\"/c/Program Files/Blender Foundation/Blender 5.1/blender.exe\" -b -P \"D:/gitfork/pipe_radius_estimation/PipeGenBench/run_benchmark.py\")",
+      "Bash(pip install *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(PYTHONPATH=src python -m pytest tests/ -q)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(.venv\\\\Scripts\\\\python.exe *)"
+    ]
+  }
+}
