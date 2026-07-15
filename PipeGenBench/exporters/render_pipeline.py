@@ -6,6 +6,15 @@ class RenderPipeline:
         self.config = config
         
     def render(self, output_dir):
+        # Clear/overwrite output directory to prevent stale files from accumulating
+        if os.path.exists(output_dir):
+            for f in os.listdir(output_dir):
+                if f.endswith('.exr') or f.endswith('.png') or f.endswith('.ply'):
+                    try:
+                        os.remove(os.path.join(output_dir, f))
+                    except OSError:
+                        pass
+
         scene = bpy.context.scene
         
         # Ensure nodes are setup and Z pass is enabled
@@ -27,15 +36,14 @@ class RenderPipeline:
             
         render_layers = tree.nodes.new('CompositorNodeRLayers')
         
-        # Depth via Viewer Node to ensure it gets generated as a standard OPEN_EXR
-        # (avoiding CompositorNodeOutputFile multilayer restrictions)
-        viewer_node = tree.nodes.new('CompositorNodeViewer')
-        links.new(render_layers.outputs['Depth'], viewer_node.inputs[0])
-        
-        # In Blender 5.1, when executing in background mode, the compositor might not evaluate 
-        # file output nodes if the node group is not the active scene node tree.
-        # But EEVEE/CYCLES might still fail if there's no actual output. 
-        # Using CYCLES and saving explicitly via save_render as fallback.
+        # Depth via Output File Node (Single Layer EXR)
+        depth_output = tree.nodes.new('CompositorNodeOutputFile')
+        depth_output.base_path = output_dir
+        # This will write out `depth_0001.exr` by default if frame is 1
+        depth_output.file_slots[0].path = "depth_"
+        depth_output.format.file_format = 'OPEN_EXR'
+        depth_output.format.color_depth = '32'
+        links.new(render_layers.outputs['Depth'], depth_output.inputs[0])
         
         # Render Frame
         scene.frame_set(1)
@@ -47,14 +55,13 @@ class RenderPipeline:
         # Execute render (write_still=True forces the main composite/scene to save to filepath)
         bpy.ops.render.render(write_still=True)
         
-        # After render, save the depth explicitly from the Viewer Node as a standard EXR
-        scene.render.image_settings.file_format = 'OPEN_EXR'
-        scene.render.image_settings.color_depth = '32'
-        if 'Viewer Node' in bpy.data.images:
-            depth_img = bpy.data.images['Viewer Node']
-            depth_img.save_render(filepath=os.path.join(output_dir, "depth.exr"))
-        else:
-            raise RuntimeError("Viewer Node did not generate an image for depth!")
+        # Rename the rendered depth file from depth_0001.exr to depth.exr
+        expected_depth_file = os.path.join(output_dir, "depth_0001.exr")
+        final_depth_file = os.path.join(output_dir, "depth.exr")
+        if os.path.exists(expected_depth_file):
+            if os.path.exists(final_depth_file):
+                os.remove(final_depth_file)
+            os.rename(expected_depth_file, final_depth_file)
         
         # Pointcloud export (pure code fixture)
         # We select all visible mesh objects and export them as a .ply

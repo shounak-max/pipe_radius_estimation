@@ -34,3 +34,4 @@ def test_ingestion_loads_blender_fixture():
         pytest.skip("Skipping image load test because cv2 and imageio are missing")
     assert fusion_input.segmented_cloud.shape == pcd.shape
     assert fusion_input.calibration.image_width == 1920
+    assert fusion_input.depth_image.shape == (fusion_input.calibration.image_height, fusion_input.calibration.image_width)

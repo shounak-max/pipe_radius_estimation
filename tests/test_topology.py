@@ -36,18 +36,21 @@ def test_topology_recovers_known_t_junction():
     axis1 = np.array(edges_gt[0]["pipe_axis"])
     axis2 = np.array(edges_gt[1]["pipe_axis"])
     
+    # Use a parameterized threshold for extracting cylinder points to avoid 
+    # skipping when point cloud scale or density changes
+    axis_threshold = 1.5
+    
     # Filter points that form a tight cylinder along axis1
     v1 = points - gt_center
     dist_to_axis1 = np.linalg.norm(np.cross(v1, axis1), axis=1)
-    pts1 = points[dist_to_axis1 < 0.3]
+    pts1 = points[dist_to_axis1 < axis_threshold]
     
     # Filter points that form a tight cylinder along axis2
     v2 = points - gt_center
     dist_to_axis2 = np.linalg.norm(np.cross(v2, axis2), axis=1)
-    pts2 = points[dist_to_axis2 < 0.3]
+    pts2 = points[dist_to_axis2 < axis_threshold]
     
-    if len(pts1) < 10 or len(pts2) < 10:
-        pytest.skip("Could not extract enough points along ground truth axes")
+    assert len(pts1) >= 10 and len(pts2) >= 10, "Could not extract enough points along ground truth axes"
         
     seg1 = PipeSegment(segment_id="pipe_1", points=pts1)
     seg2 = PipeSegment(segment_id="pipe_2", points=pts2)

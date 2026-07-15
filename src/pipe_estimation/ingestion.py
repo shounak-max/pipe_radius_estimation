@@ -157,6 +157,9 @@ class DataIngestor:
         # Ensure depth is float32
         depth_image = depth_image.astype(np.float32)
         
+        if depth_image.shape != (calib.image_height, calib.image_width):
+            raise ValueError(f"Depth image shape {depth_image.shape} does not match calibration {(calib.image_height, calib.image_width)}")
+        
         return FusionInput(
             segmented_cloud=pcd,
             rgb_edge_image=rgb_edge_image,
