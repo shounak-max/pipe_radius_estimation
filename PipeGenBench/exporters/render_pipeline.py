@@ -36,13 +36,23 @@ class RenderPipeline:
             
         render_layers = tree.nodes.new('CompositorNodeRLayers')
         
-        # Depth via Output File Node (Single Layer EXR)
+        # Depth via Output File Node
         depth_output = tree.nodes.new('CompositorNodeOutputFile')
-        depth_output.base_path = output_dir
-        # This will write out `depth_0001.exr` by default if frame is 1
-        depth_output.file_slots[0].path = "depth_"
-        depth_output.format.file_format = 'OPEN_EXR'
-        depth_output.format.color_depth = '32'
+        
+        if hasattr(depth_output, 'directory'):
+            # Blender 5.1+ API
+            depth_output.directory = output_dir
+            depth_output.file_name = "depth"
+        else:
+            # Blender < 5.0 API
+            depth_output.base_path = output_dir
+
+        if hasattr(depth_output, 'file_output_items'):
+            depth_output.file_output_items.clear()
+            depth_output.file_output_items.new('FLOAT', 'depth')
+        else:
+            depth_output.file_slots[0].path = "depth_"
+
         links.new(render_layers.outputs['Depth'], depth_output.inputs[0])
         
         # Render Frame
@@ -55,14 +65,29 @@ class RenderPipeline:
         # Execute render (write_still=True forces the main composite/scene to save to filepath)
         bpy.ops.render.render(write_still=True)
         
-        # Rename the rendered depth file from depth_0001.exr to depth.exr
-        expected_depth_file = os.path.join(output_dir, "depth_0001.exr")
-        final_depth_file = os.path.join(output_dir, "depth.exr")
-        if os.path.exists(expected_depth_file):
-            if os.path.exists(final_depth_file):
-                os.remove(final_depth_file)
-            os.rename(expected_depth_file, final_depth_file)
+        # Blender's CompositorNodeOutputFile might name things inconsistently in 5.1
+        # Check all possible names and rename to depth.exr
+        depth_candidates = [
+            os.path.join(output_dir, "depth0001.exr"),
+            os.path.join(output_dir, "depth_0001.exr"),
+            os.path.join(output_dir, "depth.exr"),
+            os.path.join(output_dir, "file_name.exr"),
+            os.path.join(output_dir, "file_name0001.exr")
+        ]
         
+        renamed = False
+        for cand in depth_candidates:
+            if os.path.exists(cand):
+                if cand != os.path.join(output_dir, "depth.exr"):
+                    if os.path.exists(os.path.join(output_dir, "depth.exr")):
+                        os.remove(os.path.join(output_dir, "depth.exr"))
+                    os.rename(cand, os.path.join(output_dir, "depth.exr"))
+                renamed = True
+                break
+                
+        if not renamed:
+            raise FileNotFoundError(f"CRITICAL FAILURE: Depth pass was not generated for {output_dir}")
+
         # Pointcloud export (pure code fixture)
         # We select all visible mesh objects and export them as a .ply
         bpy.ops.object.select_all(action='DESELECT')
@@ -73,7 +98,3 @@ class RenderPipeline:
         ply_path = os.path.join(output_dir, "pointcloud.ply")
         # Export PLY
         bpy.ops.wm.ply_export(filepath=ply_path, export_selected_objects=True, ascii_format=True)
-
-        
-        if not os.path.exists(os.path.join(output_dir, "depth.exr")):
-            raise FileNotFoundError(f"CRITICAL FAILURE: Depth pass was not generated for {output_dir}")

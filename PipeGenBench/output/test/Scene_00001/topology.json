@@ -5,7 +5,7 @@
             "node_type": "t_junction",
             "center_coordinate": [
                 0.0,
-                2.4176571369171143,
+                0.29340502619743347,
                 0.0
             ]
         }
@@ -15,7 +15,7 @@
             "edge_id": "Edge_1",
             "source_node": "Junction_1",
             "target_node": "Pipe_Main",
-            "pipe_radius": 0.0930914317399339,
+            "pipe_radius": 0.04922152356463144,
             "pipe_axis": [
                 1.0,
                 0.0,
@@ -26,7 +26,7 @@
             "edge_id": "Edge_2",
             "source_node": "Junction_1",
             "target_node": "Pipe_Branch",
-            "pipe_radius": 0.12791494392241642,
+            "pipe_radius": 0.24024469697884238,
             "pipe_axis": [
                 0.0,
                 1.0,

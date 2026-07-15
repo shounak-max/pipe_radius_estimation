@@ -151,6 +151,15 @@ class DataIngestor:
             rgb_edge_image = (mag > 50).astype(np.uint8) * 255
             
             depth_image = iio.imread(depth_path)
+            if isinstance(depth_image, dict):
+                # Multilayer EXR returns a dict. Find depth or Z pass.
+                for k in depth_image.keys():
+                    if 'depth' in k.lower() or 'z' in k.lower():
+                        depth_image = depth_image[k]
+                        break
+                else:
+                    depth_image = list(depth_image.values())[0]
+
             if len(depth_image.shape) == 3:
                 depth_image = depth_image[:, :, 0]
                 
