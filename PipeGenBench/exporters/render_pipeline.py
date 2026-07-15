@@ -53,7 +53,14 @@ class RenderPipeline:
         else:
             depth_output.file_slots[0].path = "depth_"
 
-        links.new(render_layers.outputs['Depth'], depth_output.inputs[0])
+        depth_output.format.file_format = 'OPEN_EXR_MULTILAYER'
+        depth_output.format.color_depth = '32'
+        
+        # Explicitly link to the newly created 'depth' socket
+        if 'depth' in depth_output.inputs:
+            links.new(render_layers.outputs['Depth'], depth_output.inputs['depth'])
+        else:
+            links.new(render_layers.outputs['Depth'], depth_output.inputs[0])
         
         # Render Frame
         scene.frame_set(1)

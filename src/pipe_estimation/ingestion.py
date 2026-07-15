@@ -120,7 +120,7 @@ class DataIngestor:
         rgb_path = str(self.data_root / manifest.rgb_path)
         depth_path = str(self.data_root / manifest.depth_path)
         
-        # Try OpenCV first, fallback to imageio
+        # Try OpenCV first for RGB, fallback to imageio
         try:
             import cv2
             rgb_img = cv2.imread(rgb_path, cv2.IMREAD_COLOR)
@@ -129,17 +129,6 @@ class DataIngestor:
             gray = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2GRAY)
             # Standard Canny Edge detection
             rgb_edge_image = cv2.Canny(gray, 100, 200)
-            
-            import os
-            os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
-            depth_image = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
-            if depth_image is None:
-                raise ValueError(f"Failed to load depth EXR from {depth_path} via cv2")
-                
-            # If cv2 loads an EXR as BGR float32, take the first channel
-            if len(depth_image.shape) == 3:
-                depth_image = depth_image[:, :, 0]
-                
         except ImportError:
             import imageio.v3 as iio
             rgb_img = iio.imread(rgb_path)
@@ -150,6 +139,29 @@ class DataIngestor:
             mag = np.sqrt(gx**2 + gy**2)
             rgb_edge_image = (mag > 50).astype(np.uint8) * 255
             
+        # Try OpenEXR first for Depth (most robust for multilayer/Blender quirks), fallback to imageio
+        try:
+            import OpenEXR
+            import Imath
+            exr_file = OpenEXR.InputFile(depth_path)
+            dw = exr_file.header()['dataWindow']
+            size = (dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1)
+            
+            channels = exr_file.header()['channels'].keys()
+            target_ch = None
+            for ch in channels:
+                if 'depth' in ch.lower() or 'z' in ch.lower():
+                    target_ch = ch
+                    break
+            if target_ch is None:
+                target_ch = list(channels)[0]
+                
+            pt = Imath.PixelType(Imath.PixelType.FLOAT)
+            depth_str = exr_file.channel(target_ch, pt)
+            depth_image = np.frombuffer(depth_str, dtype=np.float32).reshape(size[1], size[0])
+            
+        except ImportError:
+            import imageio.v3 as iio
             depth_image = iio.imread(depth_path)
             if isinstance(depth_image, dict):
                 # Multilayer EXR returns a dict. Find depth or Z pass.
