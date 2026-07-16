@@ -17,6 +17,10 @@ class RenderPipeline:
 
         scene = bpy.context.scene
         
+        # Force CYCLES for guaranteed geometric depth pass in headless mode
+        scene.render.engine = 'CYCLES'
+        scene.cycles.samples = 32
+        
         # Ensure nodes are setup and Z pass is enabled
         scene.view_layers["ViewLayer"].use_pass_z = True
         

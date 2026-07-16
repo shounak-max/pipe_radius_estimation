@@ -43,13 +43,39 @@ def test_fusion_extract_3d_edges_math_check():
         pytest.skip("Could not read rgb.png")
     edge_image = cv2.Canny(rgb_img, 100, 200)
     
-    # Load depth map
-    depth_image = iio.imread(depth_path)
-    
-    # If the EXR is multilayer or has channels, we just need the single depth float channel
-    if depth_image.ndim == 3:
-        # Usually depth is in channel 0 (R)
-        depth_image = depth_image[:, :, 0]
+    # Try OpenEXR first for Depth
+    try:
+        import OpenEXR
+        import Imath
+        exr_file = OpenEXR.InputFile(depth_path)
+        dw = exr_file.header()['dataWindow']
+        size = (dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1)
+        
+        channels = exr_file.header()['channels'].keys()
+        target_ch = None
+        for ch in channels:
+            if 'depth' in ch.lower() or 'z' in ch.lower():
+                target_ch = ch
+                break
+        if target_ch is None:
+            target_ch = list(channels)[0]
+            
+        pt = Imath.PixelType(Imath.PixelType.FLOAT)
+        depth_str = exr_file.channel(target_ch, pt)
+        depth_image = np.frombuffer(depth_str, dtype=np.float32).reshape(size[1], size[0])
+    except ImportError:
+        # Load depth map using imageio fallback
+        depth_image = iio.imread(depth_path)
+        if isinstance(depth_image, dict):
+            for k in depth_image.keys():
+                if 'depth' in k.lower() or 'z' in k.lower():
+                    depth_image = depth_image[k]
+                    break
+            else:
+                depth_image = list(depth_image.values())[0]
+
+        if depth_image.ndim == 3:
+            depth_image = depth_image[:, :, 0]
         
     pts_world = extract_3d_edges(edge_image, depth_image, calib)
     

@@ -35,4 +35,4 @@ def test_ingestion_loads_blender_fixture():
     assert fusion_input.segmented_cloud.shape == pcd.shape
     assert fusion_input.calibration.image_width == 1920
     assert fusion_input.depth_image.shape == (fusion_input.calibration.image_height, fusion_input.calibration.image_width)
-    assert np.std(fusion_input.depth_image) > 0.0, "Depth image is flat (no variance detected)."
+    assert np.std(fusion_input.depth_image) > 1e-3, f"Depth image is flat (std = {np.std(fusion_input.depth_image)})."
