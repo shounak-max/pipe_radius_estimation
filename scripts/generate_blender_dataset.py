@@ -66,8 +66,14 @@ def create_blender_dataset(output_dir="C:/tmp/blender_pipe_dataset"):
     scene.render.resolution_percentage = 100
 
     # 7. Setup Compositor for Depth and RGB output
-    scene.use_nodes = True
-    tree = scene.node_tree
+    if hasattr(scene, 'compositing_node_group'):
+        scene.compositing_node_group = bpy.data.node_groups.new('Compositor', 'CompositorNodeTree')
+        tree = scene.compositing_node_group
+        scene.use_nodes = True
+    else:
+        scene.use_nodes = True
+        tree = scene.node_tree
+    
     links = tree.links
     
     # Clear existing nodes
@@ -76,23 +82,24 @@ def create_blender_dataset(output_dir="C:/tmp/blender_pipe_dataset"):
         
     render_layers = tree.nodes.new('CompositorNodeRLayers')
     
-    # RGB Output Node
-    file_output_rgb = tree.nodes.new('CompositorNodeOutputFile')
-    file_output_rgb.base_path = output_dir
-    file_output_rgb.file_slots[0].path = "rgb_"
-    file_output_rgb.format.file_format = 'PNG'
-    links.new(render_layers.outputs['Image'], file_output_rgb.inputs[0])
+    # Explicitly set main render path for RGB (bypassing compositor quirks)
+    scene.render.image_settings.file_format = 'PNG'
+    scene.render.filepath = os.path.join(output_dir, "rgb.png")
     
     # Depth Output Node
     file_output_depth = tree.nodes.new('CompositorNodeOutputFile')
-    file_output_depth.base_path = output_dir
-    file_output_depth.file_slots[0].path = "depth_"
+    if hasattr(file_output_depth, 'directory'):
+        file_output_depth.directory = output_dir
+        file_output_depth.file_name = "depth"
+    else:
+        file_output_depth.base_path = output_dir
+        file_output_depth.file_slots[0].path = "depth_"
     file_output_depth.format.file_format = 'OPEN_EXR'
     links.new(render_layers.outputs['Depth'], file_output_depth.inputs[0])
     
     # 8. Render Frame
     scene.frame_set(1)
-    bpy.ops.render.render(write_still=False)
+    bpy.ops.render.render(write_still=True)
 
     # 9. Compute and Export Camera Calibration
     res_x = scene.render.resolution_x

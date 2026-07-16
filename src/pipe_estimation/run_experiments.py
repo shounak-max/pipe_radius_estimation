@@ -89,6 +89,7 @@ def run_monte_carlo_experiment_1(num_trials=50):
             rejected = num_trials - canon_converged
             print(f"  Canonical Bias: Mean = {mean_canon:+.3f}mm | Std = {std_canon:.3f}mm | SE = {stderr_canon:.3f}mm ({canon_converged} converged, {rejected} rejected)")
         else:
+            mean_canon = np.nan
             print("  Canonical Bias: ALL FAILED TO CONVERGE")
             
         if len(biases_var) > 0:
@@ -98,6 +99,7 @@ def run_monte_carlo_experiment_1(num_trials=50):
             rejected = num_trials - var_converged
             print(f"  Variance-Corrected Bias: Mean = {mean_var:+.3f}mm | Std = {std_var:.3f}mm | SE = {stderr_var:.3f}mm ({var_converged} converged, {rejected} rejected)")
         else:
+            mean_var = np.nan
             print("  Variance-Corrected Bias: ALL FAILED TO CONVERGE")
             
         if len(biases_ru) > 0:
@@ -107,7 +109,12 @@ def run_monte_carlo_experiment_1(num_trials=50):
             rejected = num_trials - ru_converged
             print(f"  True RU-EPD Bias: Mean = {mean_ru:+.3f}mm | Std = {std_ru:.3f}mm | SE = {stderr_ru:.3f}mm ({ru_converged} converged, {rejected} rejected)")
         else:
+            mean_ru = np.nan
             print("  True RU-EPD Bias: ALL FAILED TO CONVERGE")
+            
+        results.append((noise, mean_canon, mean_var, mean_ru))
+
+    return results
 
 def run_monte_carlo_experiment_2(num_trials=50):
     print("\n--- Experiment 2: Occlusion Degradation (Gap 2) [Monte Carlo N=50] ---")
@@ -117,6 +124,7 @@ def run_monte_carlo_experiment_2(num_trials=50):
     noise = 1.0 # fixed small noise
     
     visible_fractions = [0.9, 0.7, 0.5, 0.3, 0.15]
+    results = []
     
     canonical_fitter = CylinderFitter(residual_type="canonical")
     variance_fitter = CylinderFitter(residual_type="variance_corrected")
@@ -184,6 +192,7 @@ def run_monte_carlo_experiment_2(num_trials=50):
             rejected = num_trials - canon_converged
             print(f"  Canonical Bias: Mean = {mean_canon:+.3f}mm | Std = {std_canon:.3f}mm | SE = {stderr_canon:.3f}mm ({canon_converged} converged, {rejected} rejected)")
         else:
+            mean_canon = np.nan
             print("  Canonical Bias: ALL FAILED TO CONVERGE")
             
         if len(biases_var) > 0:
@@ -193,6 +202,7 @@ def run_monte_carlo_experiment_2(num_trials=50):
             rejected = num_trials - var_converged
             print(f"  Variance-Corrected Bias: Mean = {mean_var:+.3f}mm | Std = {std_var:.3f}mm | SE = {stderr_var:.3f}mm ({var_converged} converged, {rejected} rejected)")
         else:
+            mean_var = np.nan
             print("  Variance-Corrected Bias: ALL FAILED TO CONVERGE")
             
         if len(biases_ru) > 0:
@@ -202,7 +212,12 @@ def run_monte_carlo_experiment_2(num_trials=50):
             rejected = num_trials - ru_converged
             print(f"  True RU-EPD Bias: Mean = {mean_ru:+.3f}mm | Std = {std_ru:.3f}mm | SE = {stderr_ru:.3f}mm ({ru_converged} converged, {rejected} rejected)")
         else:
+            mean_ru = np.nan
             print("  True RU-EPD Bias: ALL FAILED TO CONVERGE")
+            
+        results.append((vis, mean_canon, mean_var, mean_ru))
+
+    return results
 
 if __name__ == "__main__":
     run_monte_carlo_experiment_1()

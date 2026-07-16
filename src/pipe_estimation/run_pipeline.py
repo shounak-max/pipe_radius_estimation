@@ -27,8 +27,9 @@ def run_simulation_ablation(num_trials=50):
         pipe2_points = scene_cloud[2000:] 
         
         # cx, cy, cz, theta, phi, r
-        initial_guess = np.array([300.0, 50.0, 200.0, 0.0, 1.0, 90.0])
-        init_constrained = np.array([300.0, 50.0, 200.0, 90.0])
+        c_guess = np.mean(pipe2_points, axis=0)
+        initial_guess = np.array([c_guess[0], c_guess[1], c_guess[2], 0.0, 1.0, 90.0])
+        init_constrained = np.array([c_guess[0], c_guess[1], c_guess[2], 90.0])
         
         # 1. Baseline
         fitter_baseline = CylinderFitter(residual_type="canonical")
@@ -49,8 +50,9 @@ def run_simulation_ablation(num_trials=50):
             return dist_to_axis - r
             
         res_topo = least_squares(constrained_residual, init_constrained, args=(pipe2_points,), method='lm')
-        bias_topo = compute_signed_bias(res_topo.x[3], gt_radius)
-        biases_topo.append(bias_topo)
+        if res_topo.success:
+            bias_topo = compute_signed_bias(res_topo.x[3], gt_radius)
+            biases_topo.append(bias_topo)
         
         # 3. Topology-Aware + Bias Correction
         # We first run the canonical constrained residual to get the fixed variance
@@ -81,9 +83,10 @@ def run_simulation_ablation(num_trials=50):
         init_full[3] = np.log(init_full[3])
             
         res_full = least_squares(variance_corrected_constrained_residual, init_full, args=(pipe2_points, fixed_var), method='lm')
-        final_radius = np.exp(res_full.x[3])
-        bias_full = compute_signed_bias(final_radius, gt_radius)
-        biases_full.append(bias_full)
+        if res_full.success:
+            final_radius = np.exp(res_full.x[3])
+            bias_full = compute_signed_bias(final_radius, gt_radius)
+            biases_full.append(bias_full)
 
     # Calculate statistics
     mean_base = np.nanmean(biases_base) if biases_base else np.nan
