@@ -42,14 +42,7 @@ try {
     if ($null -ne $blender_exe) {
         Write-Host "Found Blender at: $blender_exe" -ForegroundColor Green
         
-        Write-Host "  -> Running synthetic scene generator..."
-        & $blender_exe --background --python-exit-code 1 --python scripts/generate_blender_dataset.py
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "  [!] Single scene generation failed!" -ForegroundColor Red
-        } else {
-            Write-Host "  [+] Single scene generated successfully!" -ForegroundColor Green
-        }
-        
+
         Write-Host "`n  -> Running complete PipeGenBench dataset generation..."
         & $blender_exe --background --python-exit-code 1 --python PipeGenBench/run_benchmark.py
         if ($LASTEXITCODE -ne 0) {
