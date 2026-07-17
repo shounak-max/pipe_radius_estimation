@@ -66,6 +66,7 @@ def create_blender_dataset(output_dir="C:/tmp/blender_pipe_dataset"):
     scene.render.resolution_percentage = 100
 
     # 7. Setup Compositor for Depth and RGB output
+    scene.view_layers["ViewLayer"].use_pass_z = True
     if hasattr(scene, 'compositing_node_group'):
         scene.compositing_node_group = bpy.data.node_groups.new('Compositor', 'CompositorNodeTree')
         tree = scene.compositing_node_group
@@ -93,13 +94,46 @@ def create_blender_dataset(output_dir="C:/tmp/blender_pipe_dataset"):
         file_output_depth.file_name = "depth"
     else:
         file_output_depth.base_path = output_dir
+
+    if hasattr(file_output_depth, 'file_output_items'):
+        file_output_depth.file_output_items.clear()
+        file_output_depth.file_output_items.new('FLOAT', 'depth')
+    else:
         file_output_depth.file_slots[0].path = "depth_"
-    file_output_depth.format.file_format = 'OPEN_EXR'
-    links.new(render_layers.outputs['Depth'], file_output_depth.inputs[0])
+
+    file_output_depth.format.file_format = 'OPEN_EXR_MULTILAYER'
+    file_output_depth.format.color_depth = '32'
+    
+    if 'depth' in file_output_depth.inputs:
+        links.new(render_layers.outputs['Depth'], file_output_depth.inputs['depth'])
+    else:
+        links.new(render_layers.outputs['Depth'], file_output_depth.inputs[0])
     
     # 8. Render Frame
     scene.frame_set(1)
     bpy.ops.render.render(write_still=True)
+
+    # 8.5 Rename depth map to standard name (Blender 5.1 workaround)
+    depth_candidates = [
+        os.path.join(output_dir, "depth0001.exr"),
+        os.path.join(output_dir, "depth_0001.exr"),
+        os.path.join(output_dir, "depth.exr"),
+        os.path.join(output_dir, "file_name.exr"),
+        os.path.join(output_dir, "file_name0001.exr")
+    ]
+    renamed = False
+    for cand in depth_candidates:
+        if os.path.exists(cand):
+            target_path = os.path.join(output_dir, "depth.exr")
+            if cand != target_path:
+                if os.path.exists(target_path):
+                    os.remove(target_path)
+                os.rename(cand, target_path)
+            renamed = True
+            break
+            
+    if not renamed:
+        print("WARNING: Depth pass was not generated!")
 
     # 9. Compute and Export Camera Calibration
     res_x = scene.render.resolution_x

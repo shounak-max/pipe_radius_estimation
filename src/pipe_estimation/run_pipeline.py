@@ -35,8 +35,9 @@ def run_simulation_ablation(num_trials=50):
         fitter_baseline = CylinderFitter(residual_type="canonical")
         try:
             params_base, diag_base = fitter_baseline.fit(pipe2_points, initial_guess)
-            bias_base = compute_signed_bias(params_base[5], gt_radius)
-            biases_base.append(bias_base)
+            if diag_base.get('converged', False) or diag_base.get('status', -1) > 0:
+                bias_base = compute_signed_bias(params_base[5], gt_radius)
+                biases_base.append(bias_base)
         except Exception:
             pass
             

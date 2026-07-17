@@ -111,7 +111,7 @@ To test the efficacy of topological constraints, we utilize the `generate_plant_
 A major engineering contribution of this work is the consolidation of the testing framework. We developed a robust PowerShell orchestrator (`run_all.ps1`) that automatically handles the entire lifecycle of the experiment.
 It automatically resolves the Python virtual environment (`.\.venv\Scripts\python.exe`), executes the Monte Carlo simulations sequentially, and triggers the matplotlib data visualization suite (`plot_results.py`). 
 
-Furthermore, the pipeline dynamically interrogates the host operating system's `PATH` variable and default installation directories to locate the Blender executable. If found, it automatically executes the `PipeGenBench` suite—a Blender-based synthetic dataset generator that produces photo-realistic, ray-traced depth maps (.exr), RGB images, and highly accurate point clouds (.ply) with perfect ground truth JSON annotations. This ensures that the pipeline can bridge the gap between mathematical simulation and rendering-engine realistic simulation.
+Furthermore, the pipeline dynamically interrogates the host operating system's `PATH` variable and default installation directories to locate the Blender executable. If found, it automatically executes the `PipeGenBench` suite—a Blender-based synthetic dataset generator that produces photo-realistic, ray-traced depth maps (.exr), RGB images, and highly accurate point clouds (.ply) with perfect ground truth JSON annotations. While PipeGenBench generates physically realistic simulations, it currently functions as a separate testing module and its output data is completely decoupled from the Monte Carlo experiments presented in Section 4.
 
 ---
 
@@ -139,7 +139,7 @@ The results for Experiment 2 (Occlusion Degradation) highlight the fundamental, 
 *   **High Visibility (90% - 70%):** All estimators performed excellently. At 70% visibility, biases remained sub-0.01mm, and the standard deviations across the 50 trials were extremely tight (~0.04mm). The problem remains well-posed.
 *   **Moderate Occlusion (50%):** Instability began to manifest. While mean biases remained relatively low (sub-0.02mm), the standard deviations doubled to ~0.08mm across all estimators, indicating that the solver was beginning to struggle to find a decisive minimum.
 *   **Severe Occlusion (30%):** The condition numbers of the Jacobians began to skyrocket (exceeding 3000, indicating severe ill-conditioning). The Canonical bias spiked to +0.082mm with a concerning standard deviation of 0.267mm.
-*   **Extreme Occlusion (15%):** The geometric curvature became entirely degenerate. The Canonical fitter catastrophically failed, collapsing inward to yield a massive negative bias of **-0.381mm** with a standard deviation of **2.104mm**. The solver was essentially guessing. The Variance-Corrected fitter mirrored this catastrophic failure (-0.388mm). However, the True RU-EPD formulation demonstrated superior geometric resilience, maintaining a positive bias of **+0.158mm** and a slightly lower standard deviation of 1.907mm. 
+*   **Extreme Occlusion (15%):** The geometric curvature became entirely degenerate. The Canonical fitter catastrophically failed, collapsing inward to yield a massive negative bias of **-0.381mm** with a standard deviation of **2.104mm**. The solver was essentially guessing. The Variance-Corrected fitter mirrored this catastrophic failure, failing to reduce the standard deviation (2.104mm). However, the True RU-EPD formulation demonstrated superior geometric resilience, mitigating the massive negative bias (+0.158mm) and achieving a real, albeit modest, improvement in standard deviation (1.907mm). 
 
 ![Experiment 2: Signed Bias vs Visible Circumference](output/plots/experiment2_occlusion.png)
 
@@ -178,7 +178,12 @@ The failure of our topological constraint ablation to significantly improve accu
 
 In this comprehensive, data-driven report, we engineered and executed a unified, automated testing pipeline to systematically evaluate the physical and mathematical robustness of pipe radius estimation algorithms. 
 
-Our empirical data definitively proves that canonical least-squares estimators suffer from an inherent, mathematically predictable positive bias under noise, and catastrophic, unrecoverable instability under extreme occlusion. While advanced variance-corrected formulations successfully mitigate noise-induced bias (solving the Noise-Bias Gap), severe occlusion (sub-30% visibility) remains a fundamental geometric limitation that severely destabilizes all tested algorithms. 
+Our empirical data proves that canonical least-squares estimators suffer from an inherent, mathematically predictable positive bias under noise, and catastrophic, unrecoverable instability under extreme occlusion. While advanced variance-corrected formulations successfully mitigate noise-induced bias (solving the Noise-Bias Gap), severe occlusion (sub-30% visibility) remains a fundamental geometric limitation that severely destabilizes all tested algorithms. 
+
+### 6.1 Limitations: Simulation-Only Validation (The Hard Scope Rule)
+It is crucial to recognize that the findings in this report are bounded by a strict scope limitation. All empirical data presented in Section 4 is derived exclusively from pure-math point cloud generation (`simulator.py`), representing highly idealized geometry subject only to simplified Gaussian degradation. The results do **not** constitute validation on real-world, physical scanner data or physical environments. 
+
+Furthermore, while the pipeline incorporates the `PipeGenBench` ray-tracing suite, it functions solely as an independent generation step. The realistic rendering outputs of `PipeGenBench` do not feed into the Monte Carlo or ablation experiments analyzed herein. Bridging the gap to physical reality remains an open area for future validation. 
 
 Furthermore, our ablation studies revealed a counter-intuitive truth: local topological constraints do not inherently rescue accuracy in occluded regions if the solver is already well-initialized. 
 
