@@ -6,8 +6,9 @@ from pipe_estimation.ingestion import DataIngestor
 def test_ingestion_loads_blender_fixture():
     fixture_dir = os.path.join(os.path.dirname(__file__), "..", "PipeGenBench", "output", "test", "Scene_00001")
     
-    if not os.path.exists(fixture_dir):
-        pytest.skip(f"Fixture directory {fixture_dir} not found. Run PipeGenBench first.")
+    pcd_path = os.path.join(fixture_dir, "pointcloud.ply")
+    if not os.path.exists(pcd_path):
+        pytest.skip(f"Binary fixture {pcd_path} not found. Run PipeGenBench first.")
         
     ingestor = DataIngestor(fixture_dir)
     
